@@ -1,0 +1,22 @@
+.col-width {
+  width: 150px;
+  height: 150px;
+  float:left;
+  font-size: xx-large;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+
+.board {
+  padding: 15px;
+}
+
+.float-left {
+  float:left;
+}
+
+#top #middle #bottom{
+  width:700px;
+  clear:both;
+}
