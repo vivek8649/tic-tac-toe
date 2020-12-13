@@ -1,37 +1,37 @@
 <div class="board">
   <div id="top">
     <div class="float-left">
-      <button id="top-left" (click)="readUserInput($event, 0,0)" class="col-width"> {{ input[0][0] }} </button>
+      <button id="top-left" (click)="readUserInput($event,0)" class="col-width"> {{ board[0] }} </button>
     </div>
     <div class="float-left">
-      <button id="top-middle" (click)="readUserInput($event, 0,1)" class="col-width"> {{ input[0][1] }} </button>
+      <button id="top-middle" (click)="readUserInput($event, 1)" class="col-width"> {{ board[1] }} </button>
     </div>
     <div class="float-left">
-      <button id="top-right" (click)="readUserInput($event, 0,2)" class="col-width"> {{ input[0][2] }} </button>
+      <button id="top-right" (click)="readUserInput($event, 2)" class="col-width"> {{ board[2] }} </button>
     </div>
   </div>
 
   <div id="middle">
     <div class="float-left">
-      <button (click)="readUserInput($event, 1,0)" class="col-width"> {{ input[1][0] }} </button>
+      <button (click)="readUserInput($event, 3)" class="col-width"> {{ board[3] }} </button>
     </div>
     <div class="float-left">
-      <button id="middle" (click)="readUserInput($event, 1,1)" class="col-width"> {{ input[1][1] }} </button>
+      <button id="middle" (click)="readUserInput($event, 4)" class="col-width"> {{ board[4] }} </button>
     </div>
     <div class="float-left">
-      <button id="left-middle" (click)="readUserInput($event, 1,2)" class="col-width"> {{ input[1][2] }} </button>
+      <button id="left-middle" (click)="readUserInput($event, 5)" class="col-width"> {{ board[5] }} </button>
     </div>
   </div>
 
   <div id="bottom">
     <div class="float-left">
-      <button id="bottom-left" (click)="readUserInput($event, 2,0)" class="col-width"> {{ input[2][0] }} </button>
+      <button id="bottom-left" (click)="readUserInput($event, 6)" class="col-width"> {{ board[6] }} </button>
     </div>
     <div class="float-left">
-      <button id="bottom-middle" (click)="readUserInput($event, 2,1)" class="col-width"> {{ input[2][1] }} </button>
+      <button id="bottom-middle" (click)="readUserInput($event, 7)" class="col-width"> {{ board[7] }} </button>
     </div>
     <div class="float-left">
-      <button id="bottom-right" (click)="readUserInput($event, 2,2)" class="col-width"> {{ input[2][2] }} </button>
+      <button id="bottom-right" (click)="readUserInput($event, 8)" class="col-width"> {{ board[8] }} </button>
     </div>
   </div>
 </div>

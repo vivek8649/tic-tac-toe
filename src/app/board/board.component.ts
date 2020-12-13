@@ -1,247 +1,184 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit } from '@angular/core';
+import { element } from 'protractor';
+import { GameLevel } from '../shared/enum/game-level.enum';
+import { Player } from '../shared/enum/player';
+import { GameInfo } from '../shared/model/game-info';
+import { MiniMaxService } from '../shared/service/minimax.service';
 
 @Component({
-  selector: 'board',
+  selector: 'app-board',
   templateUrl: './board.component.html',
   styleUrls: ['./board.component.css']
 })
-export class BoardComponent implements OnInit {
+export class BoardComponent implements OnInit, OnChanges {
 
-  public input: string[][] = [['', '', ''], ['', '', ''], ['', '', '']];
-  public isAdmin: boolean = false;
+  @Input()
+  public gameInfo: GameInfo = { level: GameLevel.easy, isGameStarted: false };
+
+  public player1 = 'X';
+  public player2 = '0';
+
+  public winCombos = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+  ];
+
+  public board: string[] = ['', '', '', '', '', '', '', '', ''];
+  public isAdmin = false;
   public isGameFinished = false;
 
-  constructor() {
+  constructor(private miniMaxService: MiniMaxService) {
   }
 
   public ngOnInit(): void {
-
+    this.startGame();
   }
 
-  public readUserInput(event: Event, x: number, y: number): void {
-    if (this.input[x][y] === '*' || this.input[x][y] === '0' || this.isGameFinished) return;
+  public ngOnChanges(): void {
+    this.startGame();
+  }
 
-    this.input[x][y] = '*';
-
-    if (this.isGameWon('*')) {
-      this.isGameFinished = true;
-      setTimeout(() => {
-        alert('You won');
-      });
+  public readUserInput(event: Event, x: number): void {
+    // Invalid inputs - If user is clicking at filled places or after game is finished
+    if (this.board[x] || this.isGameFinished) {
       return;
     }
 
-    this.readAdminInput();
-
-    if (this.isGameWon('0')) {
-      this.isGameFinished = true;
+    setTimeout(() => {
+      this.makeTheMove(x, this.player1);
       setTimeout(() => {
-        alert('Computer won');
+        // Check if 2nd player is computer if yes make it's move
+        if (!this.isGameFinished) {
+          this.makeTheMove(this.getBestMoveForComputer(), this.player2);
+        }
       });
-      return;
+    });
+  }
+
+  private getBestMoveForComputer(): number {
+    if (this.gameInfo.level == GameLevel.impossible) {
+      return this.miniMaxService.findBestMove(this.board, this.player2, this.player1);
+    } else if (this.gameInfo.level == GameLevel.medium) {
+      return this.findPossibleBestIndex(this.board, this.player2, this.player1);
+    } else {
+      const playerWinningIndex = this.getWinningIndex(this.board, this.player2);
+      if (playerWinningIndex != -1) return playerWinningIndex;
+      const emptyIndexes = this.getEmptyIndexes(this.board);
+      return emptyIndexes[Math.floor(Math.random() * emptyIndexes.length)]
+    }
+  }
+
+  private findPossibleBestIndex(board: string[], player: string, opponent: string): number {
+    const playerWinningIndex = this.getWinningIndex(board, player);
+    if (playerWinningIndex != -1) return playerWinningIndex;
+
+    const opponentWinningIndex = this.getWinningIndex(board, opponent);
+    if (opponentWinningIndex != -1) return opponentWinningIndex;
+
+    const possibleWinIndx = this.getPossibleWinIndx(player);
+    if (possibleWinIndx != -1) return possibleWinIndx;
+
+    const emptyIndexes = this.getEmptyIndexes(board);
+
+    return emptyIndexes[Math.floor(Math.random() * emptyIndexes.length)]
+
+  }
+
+  private getPossibleWinIndx(player: string): number {
+    for (let winArr of this.winCombos) {
+      let count = 0;
+      let index = -1;
+      winArr.forEach(element => {
+        if (this.board[element] === player) {
+          count++;
+        } else if (this.board[element] === '') {
+          index = element;
+        }
+      });
+      if (count === 1 && index != -1) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  private getEmptyIndexes(board: string[]) {
+    return board.reduce((a: number[], cell, index) =>
+      (cell === '') ? a.concat(index) : a, []);
+  }
+
+  private getWinningIndex(board: string[], player: string): number {
+    for (const [index, win] of this.winCombos.entries()) {
+      let count = 0;
+      let place = -1
+      win.forEach((element, indx) => {
+        if (this.board[element] === player) {
+          count++;
+        } else if (this.board[element] === '') {
+          place = element;
+        }
+      });
+
+      if (count === 2 && place !== -1) {
+        return place;
+      }
+    }
+    return -1;
+
+  }
+
+  private makeTheMove(x: number, player: string): void {
+    this.board[x] = player;
+
+    if (this.isGameWon(this.board, player)) {
+      setTimeout(() => {
+        alert(player + ' won the game');
+        this.isGameFinished = true;
+        return;
+      });
     }
 
     if (this.isGameDraw()) {
       setTimeout(() => {
+        alert('Game is a tie');
         this.isGameFinished = true;
-        alert('It\'s a draw');
+        return;
       });
-      return;
     }
   }
 
-  private isGameDraw() {
-    for (var i = 0; i < 3; i++) {
-      for (var j = 0; j < 3; j++) {
-        if (!this.input[i][j]) return false;
+  private startGame(): void {
+    this.board = ['', '', '', '', '', '', '', '', ''];
+    this.isGameFinished = false;
+  }
+
+  private isGameDraw(): boolean {
+    for (let i = 0; i < 9; i++) {
+      if (!this.board[i]) {
+        return false;
       }
     }
     return true;
   }
 
-  private isGameWon(player: string): boolean {
-    // check horizontal
-    var dCount = 0;
-    var dCrossCount = 0;
+  private isGameWon(board: string[], player: string): boolean {
 
-    for (var i = 0; i < 3; i++) {
-      var hCount = 0;
-      var vCount = 0;
-      for (var j = 0; j < 3; j++) {
-        // h
-        if (this.input[i][j] === player) hCount++;
-        if (this.input[j][i] === player) vCount++;
+    const plays: number[] = board.reduce((a: number[], cell, index) =>
+      (cell === player) ? a.concat(index) : a, []);
+
+    for (const [index, win] of this.winCombos.entries()) {
+      if (win.every(el => plays.indexOf(el) > -1)) {
+        return true;
       }
-      if (hCount == 3 || vCount === 3) return true;
     }
-
-    for (var i = 0; i < 3; i++) {
-      if (this.input[i][i] === player) dCount++;
-    }
-    if (dCount === 3) return true;
-
-    for (var i = 0; i < 3; i++) {
-      if (this.input[3 - i - 1][i] === player) dCrossCount++;
-    }
-    if (dCrossCount === 3) return true;
 
     return false;
   }
-
-  private readAdminInput(): void {
-    const index = this.getMiddleIndex();
-    if (index.length) {
-      this.input[index[0]][index[1]] = '0';
-    }
-  }
-
-  private GetWinningIndex(): number[] {
-    // check horizontal
-    for (var i = 0; i < 3; i++) {
-      var zeroCountH = 0;
-      var zeroCountV = 0;
-      var hIDx: number[] = [];
-      var vIdx: number[] = [];
-      for (var j = 0; j < 3; j++) {
-        // h
-        if (this.input[i][j] === '0') zeroCountH++;
-        else if (this.input[i][j] !== '*') hIDx = [i, j];
-        if (this.input[j][i] === '0') zeroCountV++;
-        else if (this.input[j][i] !== '*') vIdx = [j, i];
-      }
-      if (zeroCountH === 2 && hIDx.length) return hIDx;
-      if (zeroCountV === 2 && vIdx.length) return vIdx;
-    }
-
-    var dCount = 0;
-    var idx: number[] = [];
-    for (var i = 0; i < 3; i++) {
-      if (this.input[i][i] === '0') dCount++;
-      else if (this.input[i][i] !== '*') idx = [i, i];
-    }
-    if (dCount === 2) return idx;
-
-    idx = [];
-    dCount = 0;
-    for (var i = 0; i < 3; i++) {
-      if (this.input[3 - i - 1][i] === '0') dCount++;
-      else if (this.input[3 - i - 1][i] !== '*') idx = [3 - i - 1, i];
-    }
-    if (dCount === 2) return idx;
-
-    return [];
-  }
-
-  private getMiddleIndex(): number[] {
-    // top horizontal
-    var idx = [];
-    idx = this.GetWinningIndex();
-    if (idx.length) return idx;
-
-    idx = this.getHorizontalInsertion();
-    if (idx.length) return idx;
-
-    idx = this.getVerticalInsertion();
-    if (idx.length) return idx;
-
-    idx = this.getDiagonalInsertion();
-    if (idx.length) return idx;
-
-    idx = this.getRandomInsertion();
-    if (idx.length) return idx;
-
-    return idx;
-  }
-
-  private getRandomInsertion(): number[] {
-    var idx = [];
-
-    for (var i = 0; i < 3; i++) {
-      for (var j = 0; j < 3; j++) {
-        if (this.input[i][j] !== '*' && this.input[i][j] !== '0') {
-          idx[0] = i;
-          idx[1] = j;
-        }
-      }
-    }
-
-    return idx;
-  }
-
-  private getHorizontalInsertion(): number[] {
-    for (var i = 0; i < 3; i++) {
-      var count = 0;
-      var idx = [];
-      for (var j = 0; j < 3; j++) {
-        if (this.input[i][j] === '*') {
-          count++;
-        } else if (this.input[i][j] !== '0') {
-          idx[0] = i;
-          idx[1] = j;
-        }
-      }
-      if (count === 2 && idx.length) {
-        return idx;
-      }
-    }
-    return [];
-  }
-
-  private getVerticalInsertion(): number[] {
-    // vertical
-    for (var i = 0; i < 3; i++) {
-      var count = 0;
-      var idx = [];
-      for (var j = 0; j < 3; j++) {
-        if (this.input[j][i] === '*') {
-          count++;
-        } else if (this.input[j][i] !== '0') {
-          idx[0] = j;
-          idx[1] = i;
-        }
-      }
-      if (count === 2 && idx.length) {
-        return idx;
-      }
-    }
-
-    return [];
-  }
-
-  private getDiagonalInsertion(): number[] {
-
-
-    // diagonal
-    var count = 0;
-    var idx = [];
-
-    for (var i = 0; i < 3; i++) {
-      if (this.input[i][i] === '*') count++;
-      else if (this.input[i][i] !== '0') {
-        idx[0] = i;
-        idx[1] = i;
-      }
-    }
-
-    if (count === 2 && idx.length) return idx;
-
-    // diagonal
-    count = 0;
-    idx = [];
-
-    for (var i = 0, j = 2; i < 3; i++, j--) {
-      count++;
-      if (this.input[i][j] === '*') count++;
-      else if (this.input[i][i] !== '0') {
-        idx[0] = i;
-        idx[1] = j;
-      }
-    }
-    if (count == 2 && idx.length) return idx;
-
-    return [];
-
-  }
-
 
 }
